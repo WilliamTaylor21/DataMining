@@ -1,0 +1,87 @@
+import pandas as pd
+import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn import svm
+from sklearn.metrics import accuracy_score
+from sklearn.cluster import KMeans
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
+from sklearn import metrics
+%matplotlib inline
+
+def numericalBinary(dataset, features):
+    dataset[features] = np.where(dataset[features] >= dataset[features].mean(), 1,0)
+
+train = pd.read_csv('train.csv',skipinitialspace=True)
+test = pd.read_csv('test.csv',skipinitialspace=True)
+
+train.drop('signup_app', axis=1, inplace=True)
+train.drop('first_device_type', axis=1, inplace=True)
+train.drop('first_browser', axis=1, inplace=True)
+train.drop('id', axis=1, inplace=True)
+train.drop('date_account_created', axis=1, inplace=True)
+train.drop('date_first_booking', axis=1, inplace=True)
+train.drop('timestamp_first_active', axis=1, inplace=True)
+
+train = train[~train['country_destination'].isin(['NDF'])]
+
+test.drop('signup_app', axis=1, inplace=True)
+test.drop('first_device_type', axis=1, inplace=True)
+test.drop('first_browser', axis=1, inplace=True)
+test.drop('id', axis=1, inplace=True)
+test.drop('date_account_created', axis=1, inplace=True)
+test.drop('date_first_booking', axis=1, inplace=True)
+test.drop('timestamp_first_active', axis=1, inplace=True)
+
+train['age'].fillna(value=train['age'].mean(), inplace=True)
+test['age'].fillna(value=test['age'].mean(), inplace=True)
+train['first_affiliate_tracked'].fillna('untracked', inplace=True)
+test['first_affiliate_tracked'].fillna('untracked', inplace=True)
+
+train = pd.get_dummies(train, columns=['signup_method', 'gender','language','affiliate_channel','affiliate_provider','first_affiliate_tracked'])
+test = pd.get_dummies(test, columns=['signup_method', 'gender','language','affiliate_channel','affiliate_provider','first_affiliate_tracked'])
+
+numericalBinary(train,['age', 'signup_flow'])
+numericalBinary(test,['age', 'signup_flow'])
+
+train.drop('affiliate_channel_api', axis=1, inplace=True)
+train.drop('language_is', axis=1, inplace=True)
+test.drop('language_id', axis=1, inplace=True)
+test.drop('signup_method_weibo', axis=1, inplace=True)
+test.drop('language_-unknown-', axis=1, inplace=True)
+
+x = train.drop('country_destination', axis=1)
+y = train['country_destination']
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, random_state = 40)
+
+sc = StandardScaler()
+x_train = sc.fit_transform(x_train)
+x_test = sc.transform(x_test)
+
+rfc = RandomForestClassifier(n_estimators=200)
+rfc.fit(x_train, y_train, sample_weight=None)
+pred_rfc = rfc.predict(x_test)
+
+pred_rfc[:200]
+
+print('Accuracy score: ', accuracy_score(y_test, pred_rfc))
+
+print(classification_report(y_test, pred_rfc))
+
+clf=svm.SVC()
+clf.fit(x_train, y_train)
+pred_clf = clf.predict(x_test)
+
+pred_clf[:200]
+
+print('Accuracy score: ', accuracy_score(y_test, pred_clf))
+
+print(classification_report(y_test, pred_clf))
+
